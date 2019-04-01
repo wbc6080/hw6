@@ -1,0 +1,180 @@
+q1.m
+%算术均值滤波器
+f=imread('lena.bmp');
+m=0;      %高斯噪音均值
+var=0.01; %高斯噪音方差
+g=imnoise(f,'gaussian',m,var);
+I1=fspecial('average',[7 7]);
+y=imfilter(g,I1);
+subplot 131
+imshow(f)
+title('原图像')
+subplot 132
+imshow(g)
+title('加入高斯噪音的图像')
+subplot 133
+imshow(y,[])
+title('算术均值滤波后图像')
+q11.m
+%中值滤波器
+f=imread('lena.bmp');
+m=0;      %高斯噪音均值
+var=0.01; %高斯噪音方差
+g=imnoise(f,'gaussian',m,var);
+y=medfilt2(g,[7 7]);
+subplot 131
+imshow(f)
+title('原图像')
+subplot 132
+imshow(g)
+title('加入高斯噪音的图像')
+subplot 133
+imshow(y,[])
+title('中值滤波后图像')
+q111.m
+%几何均值滤波器
+f=imread('lena.bmp');
+p=0;      %高斯噪音均值
+var=0.01; %高斯噪音方差
+g=imnoise(f,'gaussian',p,var);
+[m,n]=size(g);
+image=g;
+fsize=3;
+fs=fix(fsize/2);
+for i=(1+fs):(m-fs)
+    for j=(1+fs):(m-fs)
+        is=g((i-fs):(i+fs),(j-fs):(j+fs));
+        image(i,j)=prod(prod(is))^(1/fsize^2);
+    end
+end
+subplot 131
+imshow(f)
+title('原图像')
+subplot 132
+imshow(g)
+title('加入高斯噪音的图像')
+subplot 133
+imshow(image,[])
+title('几何均值滤波后图像')
+q2.m
+%谐波均值滤波器
+f=imread('lena.bmp');
+g=imnoise(f,'salt & pepper',0.1);
+[m,n]=size(g);
+image=g;
+ image=double(image);
+fsize=3;
+fs=fix(fsize/2);
+for i=(1+fs):(m-fs)
+    for j=(1+fs):(m-fs)
+        is=g((i-fs):(i+fs),(j-fs):(j+fs));
+        is=double(is);
+        is=1./is;
+        image(i,j)=fsize^2/sum(sum(is));
+    end
+end
+ image=uint8(image);
+subplot 131
+imshow(f)
+title('原图像')
+subplot 132
+imshow(g)
+title('加入椒盐噪音的图像')
+subplot 133
+imshow(image,[])
+title('谐波均值滤波后图像')
+q22.m
+%逆谐波均值滤波器
+f=imread('lena.bmp');
+g=imnoise(f,'salt & pepper',0.1);
+[m,n]=size(g);
+image=g;
+image=double(image);
+fsize=3;
+fs=fix(fsize/2);
+Q=0.5;
+for i=(1+fs):(m-fs)
+    for j=(1+fs):(m-fs)
+        is=g((i-fs):(i+fs),(j-fs):(j+fs));
+        is=double(is);
+        is1=is.^(Q+1);
+        is2=is.^Q;
+        image(i,j)=sum(is1(:))/sum(is2(:));
+    end
+end
+image=uint8(image);
+subplot 131
+imshow(f)
+title('原图像')
+subplot 132
+imshow(g)
+title('加入椒盐噪音的图像')
+subplot 133
+imshow(image,[])
+title('逆谐波均值滤波（Q>0）后图像')
+q3.m
+%维纳滤波器
+f=imread('lena.bmp');
+u=double(f);
+U=fft2(u);
+U=fftshift(U);
+[m,n]=size(U);
+a=0.1;
+b=0.1;
+T=1;
+k=0.0259;
+for i=1:m
+    for j=1:n
+        H(i,j)=T/(pi*(a*i+b*j))*sin(pi*(a*i+b*j))*exp(-sqrt(-1)*pi*(a*i+b*j));
+        G(i,j)=H(i,j)*U(i,j);
+    end
+end
+G=ifftshift(G);
+g=ifft2(G);
+g=255.*g./max(g(:));
+g=real(g);
+g=uint8(g);
+y=imnoise(g,'gaussian',0,0.01);
+% subplot 131
+% imshow(f)
+% title('原图像')
+% subplot 132
+% imshow(g)
+% title('经过模糊滤波器')
+% subplot 133
+% imshow(y)
+% title('添加高斯噪声')
+y1=double(y);
+Y1=fft2(y1);
+Y1=fftshift(Y1);
+for i=1:m
+    for j=1:n
+        F1(i,j)=1/H(i,j)*real(H(i,j))^2/(real(H(i,j))^2+k)*Y1(i,j);
+    end
+end
+F1=ifftshift(F1);
+f1=ifft2(F1);
+f1=255.*f1./max(f1(:));
+f1=real(f1);
+f1=uint8(f1);
+subplot 121
+imshow(y)
+title('污染后的图像')
+subplot 122
+imshow(f1)
+title('维纳滤波器滤波后图像')
+q33.m
+%约束最小二乘方滤波器
+f=imread('lena.bmp');
+m=fspecial('motion',20,45);
+f1=imfilter(f,m,'circular','conv');
+f2=imnoise(f1,'gaussian',0,0.01);
+x=0.0001;
+noise=x*prod(size(f));
+y=deconvreg(f1,m,noise);
+subplot 121
+imshow(f2)
+title('噪声污染后的图像')
+subplot 122
+imshow(y)
+title('最小二乘方恢复图像')
